@@ -2,7 +2,7 @@
 .PHONY: build stop run
 
 build :
-	docker build -f Dockerfile.orig -t my_telegram_rss_bot
+	docker build -f Dockerfile.orig -t my_telegram_rss_bot .
 
 stop :
 	docker stop my_telegram_rss_bot
