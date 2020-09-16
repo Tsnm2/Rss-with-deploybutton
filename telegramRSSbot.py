@@ -2,6 +2,7 @@ import feedparser
 import logging
 import sqlite3
 import os
+import re
 from telegram.ext import Updater, CommandHandler
 from pathlib import Path
 
@@ -21,6 +22,7 @@ if Token == "X":
     print("Token not set!")
 
 rss_dict = {}
+banned_word_list = []
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -42,11 +44,29 @@ def sqlite_load_all():
     return rows
 
 
+def sqlite_load_all_banned_words():
+    sqlite_connect()
+    c = conn.cursor()
+    c.execute('SELECT * FROM banned_word')
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+
 def sqlite_write(name, link, last):
     sqlite_connect()
     c = conn.cursor()
     q = [(name), (link), (last)]
     c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
+    conn.commit()
+    conn.close()
+
+
+def sqlite_write_ban(word:str):
+    sqlite_connect()
+    c = conn.cursor()
+    q = [(word.lower())]
+    c.execute('''INSERT INTO banned_word('value') VALUES(?)''', q)
     conn.commit()
     conn.close()
 
@@ -59,6 +79,15 @@ def rss_load():
 
     for row in sqlite_load_all():
         rss_dict[row[0]] = (row[1], row[2])
+
+
+def banned_word_load():
+    # if the dict is not empty, empty it.
+    if bool(banned_word_list):
+        banned_word_list.clear()
+
+    for row in sqlite_load_all_banned_words():
+        banned_word_list.append(row[0])
 
 
 def cmd_rss_list(update, context):
@@ -96,6 +125,40 @@ def cmd_rss_add(update, context):
         "added \nTITLE: %s\nRSS: %s" % (context.args[0], context.args[1]))
 
 
+def cmd_rss_add_ban(update, context):
+    # try if there are 2 arguments passed
+    try:
+        context.args[0]
+    except IndexError:
+        update.effective_message.reply_text("ERROR: The format needs to be: /ban word")
+        raise
+    sqlite_write_ban(context.args[0])
+    banned_word_load()
+    update.effective_message.reply_text("added \nBanned word: %s" % (context.args[0]))
+
+
+def cmd_rss_list_ban(update, context):
+    if len(banned_word_list) == 0:
+        update.effective_message.reply_text("The database is empty")
+    else:
+        for title in banned_word_list:
+            update.effective_message.reply_text("Word: " + title)
+
+
+def cmd_rss_delete_ban(update, context):
+    conn = sqlite3.connect('config/rss.db')
+    c = conn.cursor()
+    q = (context.args[0],)
+    try:
+        c.execute("DELETE FROM banned_word WHERE value = ?", q)
+        conn.commit()
+        conn.close()
+    except sqlite3.Error as e:
+        print('Error %s:' % e.args[0])
+    banned_word_load()
+    update.effective_message.reply_text("Removed: " + context.args[0])
+
+
 def cmd_rss_remove(update, context):
     conn = sqlite3.connect('config/rss.db')
     c = conn.cursor()
@@ -122,8 +185,36 @@ def cmd_help(update, context):
         "\n/add title http://www(.)RSS-URL(.)com" +
         "\n/remove !Title! removes the RSS link" +
         "\n/list Lists all the titles and the RSS links from the DB" +
+        "\n/add_ban word" +
+        "\n/list_ban Lists all the banned words" +
+        "\n/delete_ban word Delete word from the banned words" +
         "\n/test Inbuilt command that fetches a post from Reddits RSS." +
         "\n\nThe current chatId is: " + str(update.message.chat.id))
+
+
+def check_entry_contains_banned_word(entry_detail):
+    for ban in banned_word_list:
+        if ban in entry_detail:
+            return False
+    return True
+
+
+def check_entry_budget(detail):
+    budget = re.search("Budget.*?: \\$([0-9]+)", detail).group(1)
+    if int(budget) > 99:
+        return True
+    return False
+
+
+def send_message_to_chat(context, rss_entry):
+    detail = rss_entry["summary_detail"]["value"]
+    if "Budget" not in detail:
+        send_message = True
+    else:
+        send_message = check_entry_budget(detail)
+
+    if send_message and check_entry_contains_banned_word(detail):
+        context.bot.send_message(chatid, rss_entry['link'])
 
 
 def rss_monitor(context):
@@ -138,7 +229,7 @@ def rss_monitor(context):
             conn.commit()
             conn.close()
             rss_load()
-            context.bot.send_message(chatid, rss_d.entries[0]['link'])
+            send_message_to_chat(context, rss_d.entries[0])
 
 
 def cmd_test(update, context):
@@ -152,6 +243,7 @@ def init_sqlite():
     conn = sqlite3.connect('config/rss.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE rss (name text, link text, last text)''')
+    c.execute('''CREATE TABLE banned_word ( value text)''')
 
 
 def main():
@@ -164,6 +256,9 @@ def main():
     dp.add_handler(CommandHandler("test", cmd_test, ))
     dp.add_handler(CommandHandler("list", cmd_rss_list))
     dp.add_handler(CommandHandler("remove", cmd_rss_remove))
+    dp.add_handler(CommandHandler("add_ban", cmd_rss_add_ban))
+    dp.add_handler(CommandHandler("list_ban", cmd_rss_list_ban))
+    dp.add_handler(CommandHandler("delete_ban", cmd_rss_delete_ban))
 
     # try to create a database if missing
     try:
