@@ -242,8 +242,8 @@ def cmd_test(update, context):
 def init_sqlite():
     conn = sqlite3.connect('config/rss.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE rss (name text, link text, last text)''')
-    c.execute('''CREATE TABLE banned_word ( value text)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS rss (name text, link text, last text)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS banned_word (value text)''')
 
 
 def main():
