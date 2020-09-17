@@ -214,7 +214,7 @@ def send_message_to_chat(context, rss_entry):
         send_message = check_entry_budget(detail)
 
     if send_message and check_entry_contains_banned_word(str(detail).lower()):
-        context.bot.send_message(chatid, rss_entry['link'])
+        context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', ""))
 
 
 def rss_monitor(context):
