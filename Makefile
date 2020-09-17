@@ -6,6 +6,7 @@ build :
 
 stop :
 	docker stop my_telegram_rss_bot
+	sleep 2
 	docker rm $(docker ps -aqf "name=my_telegram_rss_bot")
 
 run :
