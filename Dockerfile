@@ -5,10 +5,13 @@ FROM python:3.7-slim
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY . /app
+COPY requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r /app/requirements.txt
+
+COPY telegramRSSbot.py /app
+
 # Define environment variable
 ENV TOKEN X
 ENV CHATID X
