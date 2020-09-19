@@ -27,6 +27,7 @@ banned_word_list = []
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
+
 # SQLITE
 
 
@@ -62,7 +63,7 @@ def sqlite_write(name, link, last):
     conn.close()
 
 
-def sqlite_write_ban(word:str):
+def sqlite_write_ban(word: str):
     sqlite_connect()
     c = conn.cursor()
     q = [(word.lower())]
@@ -206,6 +207,25 @@ def check_entry_budget(detail):
     return False
 
 
+def is_message_already_send(link):
+    sqlite_connect()
+    c = conn.cursor()
+    q = [(link)]
+    c.execute('SELECT * FROM messages_send WHERE link = ?', q)
+    rows = c.fetchall()
+    conn.close()
+    return len(rows) > 0
+
+
+def save_message_send(link):
+    q = [(str(link))]
+    c = conn.cursor()
+    c.execute(
+        '''INSERT INTO messages_send('link') VALUES(?)''', q)
+    conn.commit()
+    conn.close()
+
+
 def send_message_to_chat(context, rss_entry):
     detail = rss_entry["summary_detail"]["value"]
     if "Budget" not in detail:
@@ -213,7 +233,11 @@ def send_message_to_chat(context, rss_entry):
     else:
         send_message = check_entry_budget(detail)
 
+    if is_message_already_send(rss_entry['link']):
+        return
+
     if send_message and check_entry_contains_banned_word(str(detail).lower()):
+        save_message_send(rss_entry['link'])
         context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', ""))
 
 
@@ -244,6 +268,7 @@ def init_sqlite():
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS rss (name text, link text, last text)''')
     c.execute('''CREATE TABLE IF NOT EXISTS banned_word (value text)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS messages_send (link text)''')
 
 
 def main():
