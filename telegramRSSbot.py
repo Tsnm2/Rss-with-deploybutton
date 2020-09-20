@@ -244,7 +244,10 @@ def send_message_to_chat(context, rss_entry):
 def rss_monitor(context):
     for name, url_list in rss_dict.items():
         rss_d = feedparser.parse(url_list[0])
-        if (url_list[1] != rss_d.entries[0]['link']):
+        if "entries" not in rss_d or len(rss_d.entries) == 0:
+            print(f"{name} url returns empty entries")
+            continue
+        if url_list[1] != rss_d.entries[0]['link']:
             conn = sqlite3.connect('config/rss.db')
             q = [(name), (url_list[0]), (str(rss_d.entries[0]['link']))]
             c = conn.cursor()
