@@ -247,16 +247,17 @@ def rss_monitor(context):
         if "entries" not in rss_d or len(rss_d.entries) == 0:
             print(f"{name} url returns empty entries")
             continue
-        if url_list[1] != rss_d.entries[0]['link']:
-            conn = sqlite3.connect('config/rss.db')
-            q = [(name), (url_list[0]), (str(rss_d.entries[0]['link']))]
-            c = conn.cursor()
-            c.execute(
-                '''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
-            conn.commit()
-            conn.close()
-            rss_load()
-            send_message_to_chat(context, rss_d.entries[0])
+        for i in range(min(5, len(rss_d.entries))):
+            entry = rss_d.entries[i]
+            if url_list[1] != entry['link']:
+                conn = sqlite3.connect('config/rss.db')
+                q = [(name), (url_list[0]), (str(entry['link']))]
+                c = conn.cursor()
+                c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
+                conn.commit()
+                conn.close()
+                rss_load()
+                send_message_to_chat(context, entry)
 
 
 def cmd_test(update, context):
