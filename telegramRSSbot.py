@@ -218,6 +218,8 @@ def is_message_already_send(link):
 
 
 def save_message_send(link):
+    sqlite_connect()
+    c = conn.cursor()
     q = [(str(link))]
     c = conn.cursor()
     c.execute(
