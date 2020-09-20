@@ -221,9 +221,7 @@ def save_message_send(link):
     sqlite_connect()
     c = conn.cursor()
     q = [(str(link))]
-    c = conn.cursor()
-    c.execute(
-        '''INSERT INTO messages_send('link') VALUES(?)''', q)
+    c.execute('''INSERT INTO messages_send('link') VALUES(?)''', q)
     conn.commit()
     conn.close()
 
