@@ -235,9 +235,10 @@ def save_message_send(link):
 
 def send_message_to_chat(context, rss_entry):
     detail = rss_entry["summary_detail"]["value"]
-    if "Budget" not in detail:
-        send_message = True
-    else:
+
+    send_message = True
+
+    if "Budget" in detail:
         send_message = check_entry_budget(detail)
 
     if send_message and "Country" in detail:
