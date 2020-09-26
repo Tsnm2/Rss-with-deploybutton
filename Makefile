@@ -5,8 +5,8 @@ build :
 	docker build -f Dockerfile.orig -t my_telegram_rss_bot .
 
 stop :
-	ID := `docker ps -aqf "name=my_telegram_rss_bot"`
-	echo "stopping $(ID)"
+	ID := $(docker ps -aqf "name=my_telegram_rss_bot")
+	@echo stopping $(ID)
 	docker stop "$(ID)"
 	docker rm "$(ID)"
 
