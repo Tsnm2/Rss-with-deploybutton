@@ -5,9 +5,9 @@ build :
 	docker build -f Dockerfile.orig -t my_telegram_rss_bot .
 
 stop :
-	docker stop my_telegram_rss_bot
-	sleep 2
-	docker rm $(docker ps -aqf "name=my_telegram_rss_bot")
+	container_id=`docker ps -aqf "name=my_telegram_rss_bot"`
+	docker stop $container_id
+	docker rm $container_id
 
 run :
 	docker run -d -v `pwd`/config:/app/config --name my_telegram_rss_bot my_telegram_rss_bot
