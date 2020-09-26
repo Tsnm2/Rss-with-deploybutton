@@ -207,6 +207,13 @@ def check_entry_budget(detail):
     return False
 
 
+def check_blocked_country(detail):
+    country = re.search("Country.*?: (.*)\n", detail).group(1).lower()
+    if country in "india":
+        return False
+    return True
+
+
 def is_message_already_send(link):
     sqlite_connect()
     c = conn.cursor()
@@ -233,12 +240,20 @@ def send_message_to_chat(context, rss_entry):
     else:
         send_message = check_entry_budget(detail)
 
+    if send_message and "Country" in detail:
+        send_message = check_blocked_country(detail)
+
+    if not send_message:
+        return
+
     if is_message_already_send(rss_entry['link']):
         return
 
-    if send_message and check_entry_contains_banned_word(str(detail).lower()):
-        save_message_send(rss_entry['link'])
-        context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', ""))
+    if not check_entry_contains_banned_word(str(detail).lower()):
+        return
+
+    save_message_send(rss_entry['link'])
+    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', ""))
 
 
 def rss_monitor(context):
