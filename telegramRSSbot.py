@@ -233,7 +233,7 @@ def save_message_send(link):
     conn.close()
 
 
-def send_message_to_chat(context, rss_entry):
+def send_message_to_chat(name, context, rss_entry):
     detail = rss_entry["summary_detail"]["value"]
 
     send_message = True
@@ -254,7 +254,7 @@ def send_message_to_chat(context, rss_entry):
         return
 
     save_message_send(rss_entry['link'])
-    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', ""))
+    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', "") + " " + name)
 
 
 def rss_monitor(context):
@@ -273,7 +273,7 @@ def rss_monitor(context):
                 conn.commit()
                 conn.close()
                 rss_load()
-                send_message_to_chat(context, entry)
+                send_message_to_chat(name, context, entry)
 
 
 def cmd_test(update, context):
