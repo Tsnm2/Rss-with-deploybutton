@@ -203,8 +203,13 @@ def check_entry_contains_banned_word(entry_detail):
 def check_entry_budget(detail):
     budget = re.search("Budget.*?: \\$([0-9]+)", detail).group(1)
     if int(budget) > 99:
-        return True
-    return False
+        return True, budget
+    return False, ''
+
+
+def get_hourly_price(detail):
+    price = re.search("Hourly Range.*?: (.*)\n", detail).group(1)
+    return True, price
 
 
 def check_blocked_country(detail):
@@ -238,8 +243,11 @@ def send_message_to_chat(name, context, rss_entry):
 
     send_message = True
 
+    budget = ''
     if "Budget" in detail:
-        send_message = check_entry_budget(detail)
+        send_message, budget = check_entry_budget(detail)
+    elif "Hourly Range" in detail:
+        send_message, budget = get_hourly_price(detail)
 
     if send_message and "Country" in detail:
         send_message = check_blocked_country(detail)
@@ -254,7 +262,7 @@ def send_message_to_chat(name, context, rss_entry):
         return
 
     save_message_send(rss_entry['link'])
-    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', "") + " " + name)
+    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', "") + " " + name + " " + budget)
 
 
 def rss_monitor(context):
