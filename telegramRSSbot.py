@@ -209,6 +209,10 @@ def check_entry_budget(detail):
 
 def get_hourly_price(detail):
     price = re.search("Hourly Range.*?: (.*)\n", detail).group(1)
+    prices = price.replace('$', '').split('-')
+    if len(prices) == 2:
+        low, high = float(prices[0]), float(prices[1])
+        return (low >= 25 or high >= 25), price
     return True, price
 
 
