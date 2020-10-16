@@ -210,6 +210,8 @@ def check_entry_budget(detail):
 def get_hourly_price(detail):
     price = re.search("Hourly Range.*?: (.*)\n", detail).group(1)
     prices = price.replace('$', '').split('-')
+    if len(prices) == 1:
+        return float(prices[0]) >= 25, price
     if len(prices) == 2:
         low, high = float(prices[0]), float(prices[1])
         return (low >= 25 or high >= 25), price
@@ -253,8 +255,9 @@ def send_message_to_chat(name, context, rss_entry):
     elif "Hourly Range" in detail:
         send_message, budget = get_hourly_price(detail)
 
-    if send_message and "Country" in detail:
-        send_message = check_blocked_country(detail)
+    prefix = ""
+    if send_message and "Country" in detail and not check_blocked_country(detail):
+        prefix = "⚠️⚠️⚠️⚠️"
 
     if not send_message:
         return
@@ -266,7 +269,7 @@ def send_message_to_chat(name, context, rss_entry):
         return
 
     save_message_send(rss_entry['link'])
-    context.bot.send_message(chatid, rss_entry['link'].replace('?source=rss', "") + " " + name + " " + budget)
+    context.bot.send_message(chatid, prefix + rss_entry['link'].replace('?source=rss', "") + " " + name + " " + budget)
 
 
 def rss_monitor(context):
