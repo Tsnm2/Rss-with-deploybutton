@@ -278,7 +278,7 @@ def rss_monitor(context):
         if "entries" not in rss_d or len(rss_d.entries) == 0:
             print(f"{name} url returns empty entries")
             continue
-        for i in range(min(5, len(rss_d.entries))):
+        for i in range(min(15, len(rss_d.entries))):
             entry = rss_d.entries[i]
             if url_list[1] != entry['link']:
                 conn = sqlite3.connect('config/rss.db')
