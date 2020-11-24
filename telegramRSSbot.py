@@ -3,8 +3,10 @@ import logging
 import sqlite3
 import os
 import re
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CallbackContext, CommandHandler
+from telegram import Update, ParseMode
 from pathlib import Path
+import traceback
 
 Path("config").mkdir(parents=True, exist_ok=True)
 
@@ -305,6 +307,31 @@ def init_sqlite():
     c.execute('''CREATE TABLE IF NOT EXISTS banned_word (value text)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages_send (link text)''')
 
+import html
+import json
+
+
+def error_handler(update: Update, context: CallbackContext) -> None:
+    # traceback.format_exception returns the usual python message about an exception, but as a
+    # list of strings rather than a single string, so we have to join them together.
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = ''.join(tb_list)
+
+    # Build the message with some markup and additional information about what happened.
+    # You might need to add some logic to deal with messages longer than the 4096 character limit.
+    message = (
+        f'An exception was raised while handling an update\n'
+        f'<pre>update = {html.escape(json.dumps(update.to_dict(), indent=2, ensure_ascii=False))}'
+        '</pre>\n\n'
+        f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
+        f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
+        f'<pre>{html.escape(tb_string)}</pre>'
+    )
+
+    # Finally, send the message
+    context.bot.send_message(chat_id=chatid, text=message, parse_mode=ParseMode.HTML)
+
+
 
 def main():
     updater = Updater(token=Token, use_context=True)
@@ -319,6 +346,8 @@ def main():
     dp.add_handler(CommandHandler("add_ban", cmd_rss_add_ban))
     dp.add_handler(CommandHandler("list_ban", cmd_rss_list_ban))
     dp.add_handler(CommandHandler("delete_ban", cmd_rss_delete_ban))
+
+    dp.add_error_handler(error_handler)
 
     # try to create a database if missing
     try:
