@@ -203,7 +203,7 @@ def check_entry_contains_banned_word(entry_detail):
 
 
 def check_entry_budget(detail):
-    budget = re.search("Budget.*?: \\$([0-9]+)", detail).group(1)
+    budget = re.search("Budget.*?: \\$([0-9,]+)", detail).group(1).replace(",", "")
     if int(budget) > 99:
         return True, budget
     return False, ''
