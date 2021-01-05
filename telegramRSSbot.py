@@ -72,7 +72,8 @@ def sqlite_write_ban(word: str):
 
 
 def cmd_rss_list(update, context):
-    for row in sqlite_load_all():
+    rows = sqlite_load_all()
+    for row in rows:
         title = row[0]
         url_list = row[1]
         last = row[2]
@@ -115,7 +116,8 @@ def cmd_rss_add_ban(update, context):
 
 
 def cmd_rss_list_ban(update, context):
-    for title in sqlite_load_all_banned_words():
+    rows = sqlite_load_all_banned_words()
+    for title in rows:
         update.effective_message.reply_text("Word: " + title)
 
 
@@ -246,7 +248,8 @@ def send_message_to_chat(name, context, rss_entry):
 
 
 def rss_monitor(context):
-    for row in sqlite_load_all():
+    rows = sqlite_load_all()
+    for row in rows:
         name = row[0]
         url_list = row[1]
         last_url = row[2]
