@@ -51,7 +51,7 @@ def sqlite_load_all_banned_words():
 
 def sqlite_write(name, link, last):
     c = conn.cursor()
-    q = [(name), (link), (last)]
+    q = [name, link, last]
     c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
     conn.commit()
 
@@ -65,6 +65,9 @@ def sqlite_write_ban(word: str):
 
 def cmd_rss_list(update, context):
     rows = sqlite_load_all()
+    if len(rows) == 0:
+        update.effective_message.reply_text("Database empty")
+        return
     for row in rows:
         title = row[0]
         url_list = row[1]
@@ -109,6 +112,9 @@ def cmd_rss_add_ban(update, context):
 
 def cmd_rss_list_ban(update, context):
     rows = sqlite_load_all_banned_words()
+    if len(rows) == 0:
+        update.effective_message.reply_text("Database empty")
+        return
     for title in rows:
         update.effective_message.reply_text("Word: " + title[0])
 
@@ -116,23 +122,27 @@ def cmd_rss_list_ban(update, context):
 def cmd_rss_delete_ban(update, context):
     c = conn.cursor()
     q = (context.args[0],)
+    m = ""
     try:
         c.execute("DELETE FROM banned_word WHERE value = ?", q)
         conn.commit()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
-    update.effective_message.reply_text("Removed: " + context.args[0])
+        m = e.args[0]
+    update.effective_message.reply_text("Removed: " + context.args[0] + "\n" + m)
 
 
 def cmd_rss_remove(update, context):
     c = conn.cursor()
     q = (context.args[0],)
+    m = ""
     try:
         c.execute("DELETE FROM rss WHERE name = ?", q)
         conn.commit()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
-    update.effective_message.reply_text("Removed: " + context.args[0])
+        m = e.args[0]
+    update.effective_message.reply_text("Removed: " + context.args[0] + "\n" + m)
 
 
 def cmd_help(update, context):
