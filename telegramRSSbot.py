@@ -36,39 +36,31 @@ def sqlite_connect():
 
 
 def sqlite_load_all():
-    sqlite_connect()
     c = conn.cursor()
     c.execute('SELECT * FROM rss')
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
 def sqlite_load_all_banned_words():
-    sqlite_connect()
     c = conn.cursor()
     c.execute('SELECT * FROM banned_word')
     rows = c.fetchall()
-    conn.close()
     return rows
 
 
 def sqlite_write(name, link, last):
-    sqlite_connect()
     c = conn.cursor()
     q = [(name), (link), (last)]
     c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
     conn.commit()
-    conn.close()
 
 
 def sqlite_write_ban(word: str):
-    sqlite_connect()
     c = conn.cursor()
     q = [(word.lower())]
     c.execute('''INSERT INTO banned_word('value') VALUES(?)''', q)
     conn.commit()
-    conn.close()
 
 
 def cmd_rss_list(update, context):
@@ -118,30 +110,26 @@ def cmd_rss_add_ban(update, context):
 def cmd_rss_list_ban(update, context):
     rows = sqlite_load_all_banned_words()
     for title in rows:
-        update.effective_message.reply_text("Word: " + title)
+        update.effective_message.reply_text("Word: " + title[0])
 
 
 def cmd_rss_delete_ban(update, context):
-    sqlite_connect()
     c = conn.cursor()
     q = (context.args[0],)
     try:
         c.execute("DELETE FROM banned_word WHERE value = ?", q)
         conn.commit()
-        conn.close()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
     update.effective_message.reply_text("Removed: " + context.args[0])
 
 
 def cmd_rss_remove(update, context):
-    sqlite_connect()
     c = conn.cursor()
     q = (context.args[0],)
     try:
         c.execute("DELETE FROM rss WHERE name = ?", q)
         conn.commit()
-        conn.close()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
     update.effective_message.reply_text("Removed: " + context.args[0])
@@ -167,11 +155,9 @@ def cmd_help(update, context):
 
 
 def check_entry_contains_banned_word(entry_detail):
-    sqlite_connect()
     c = conn.cursor()
     c.execute("select * from notifications where ? like concat('%', title, '%')", entry_detail)
     rows = c.fetchall()
-    conn.close()
     return len(rows) > 0
 
 
@@ -201,22 +187,18 @@ def check_blocked_country(detail):
 
 
 def is_message_already_send(link):
-    sqlite_connect()
     c = conn.cursor()
     q = [(link)]
     c.execute('SELECT * FROM messages_send WHERE link = ?', q)
     rows = c.fetchall()
-    conn.close()
     return len(rows) > 0
 
 
 def save_message_send(link):
-    sqlite_connect()
     c = conn.cursor()
     q = [(str(link))]
     c.execute('''INSERT INTO messages_send('link') VALUES(?)''', q)
     conn.commit()
-    conn.close()
 
 
 def send_message_to_chat(name, context, rss_entry):
@@ -260,12 +242,10 @@ def rss_monitor(context):
         for i in range(min(15, len(rss_d.entries))):
             entry = rss_d.entries[i]
             if last_url != entry['link']:
-                sqlite_connect()
                 q = [name, url_list, str(entry['link'])]
                 c = conn.cursor()
                 c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
                 conn.commit()
-                conn.close()
                 send_message_to_chat(name, context, entry)
 
 
@@ -282,7 +262,6 @@ def init_sqlite():
     c.execute('''CREATE TABLE IF NOT EXISTS banned_word (value text)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages_send (link text)''')
     conn.commit()
-    conn.close()
 
 import html
 import json
@@ -335,7 +314,6 @@ def main():
 
     updater.start_polling()
     updater.idle()
-    conn.close()
 
 
 if __name__ == '__main__':
