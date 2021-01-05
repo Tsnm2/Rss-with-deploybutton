@@ -23,9 +23,6 @@ else:
 if Token == "X":
     print("Token not set!")
 
-rss_dict = {}
-banned_word_list = []
-
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -74,35 +71,15 @@ def sqlite_write_ban(word: str):
     conn.close()
 
 
-# RSS________________________________________
-def rss_load():
-    # if the dict is not empty, empty it.
-    if bool(rss_dict):
-        rss_dict.clear()
-
-    for row in sqlite_load_all():
-        rss_dict[row[0]] = (row[1], row[2])
-
-
-def banned_word_load():
-    # if the dict is not empty, empty it.
-    if bool(banned_word_list):
-        banned_word_list.clear()
-
-    for row in sqlite_load_all_banned_words():
-        banned_word_list.append(row[0])
-
-
 def cmd_rss_list(update, context):
-    if bool(rss_dict) is False:
-
-        update.effective_message.reply_text("The database is empty")
-    else:
-        for title, url_list in rss_dict.items():
-            update.effective_message.reply_text(
-                "Title: " + title +
-                "\nrss url: " + url_list[0] +
-                "\nlast checked article: " + url_list[1])
+    for row in sqlite_load_all():
+        title = row[0]
+        url_list = row[1]
+        last = row[2]
+        update.effective_message.reply_text(
+            "Title: " + title +
+            "\nrss url: " + url_list +
+            "\nlast checked article: " + last)
 
 
 def cmd_rss_add(update, context):
@@ -116,14 +93,12 @@ def cmd_rss_add(update, context):
     # try if the url is a valid RSS feed
     try:
         rss_d = feedparser.parse(context.args[1])
-        rss_d.entries[0]['title']
     except IndexError:
         update.effective_message.reply_text(
             "ERROR: The link does not seem to be a RSS feed or is not supported")
         raise
     sqlite_write(context.args[0], context.args[1],
                  str(rss_d.entries[0]['link']))
-    rss_load()
     update.effective_message.reply_text(
         "added \nTITLE: %s\nRSS: %s" % (context.args[0], context.args[1]))
 
@@ -136,20 +111,16 @@ def cmd_rss_add_ban(update, context):
         update.effective_message.reply_text("ERROR: The format needs to be: /ban word")
         raise
     sqlite_write_ban(context.args[0])
-    banned_word_load()
     update.effective_message.reply_text("added \nBanned word: %s" % (context.args[0]))
 
 
 def cmd_rss_list_ban(update, context):
-    if len(banned_word_list) == 0:
-        update.effective_message.reply_text("The database is empty")
-    else:
-        for title in banned_word_list:
-            update.effective_message.reply_text("Word: " + title)
+    for title in sqlite_load_all_banned_words():
+        update.effective_message.reply_text("Word: " + title)
 
 
 def cmd_rss_delete_ban(update, context):
-    conn = sqlite3.connect('config/rss.db')
+    sqlite_connect()
     c = conn.cursor()
     q = (context.args[0],)
     try:
@@ -158,12 +129,11 @@ def cmd_rss_delete_ban(update, context):
         conn.close()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
-    banned_word_load()
     update.effective_message.reply_text("Removed: " + context.args[0])
 
 
 def cmd_rss_remove(update, context):
-    conn = sqlite3.connect('config/rss.db')
+    sqlite_connect()
     c = conn.cursor()
     q = (context.args[0],)
     try:
@@ -172,7 +142,6 @@ def cmd_rss_remove(update, context):
         conn.close()
     except sqlite3.Error as e:
         print('Error %s:' % e.args[0])
-    rss_load()
     update.effective_message.reply_text("Removed: " + context.args[0])
 
 
@@ -196,10 +165,12 @@ def cmd_help(update, context):
 
 
 def check_entry_contains_banned_word(entry_detail):
-    for ban in banned_word_list:
-        if ban in entry_detail:
-            return False
-    return True
+    sqlite_connect()
+    c = conn.cursor()
+    c.execute("select * from notifications where ? like concat('%', title, '%')", entry_detail)
+    rows = c.fetchall()
+    conn.close()
+    return len(rows) > 0
 
 
 def check_entry_budget(detail):
@@ -267,7 +238,7 @@ def send_message_to_chat(name, context, rss_entry):
     if is_message_already_send(rss_entry['link']):
         return
 
-    if not check_entry_contains_banned_word(str(detail).lower()):
+    if check_entry_contains_banned_word(str(detail).lower()):
         return
 
     save_message_send(rss_entry['link'])
@@ -275,37 +246,40 @@ def send_message_to_chat(name, context, rss_entry):
 
 
 def rss_monitor(context):
-    for name, url_list in rss_dict.items():
-        rss_d = feedparser.parse(url_list[0])
+    for row in sqlite_load_all():
+        name = row[0]
+        url_list = row[1]
+        last_url = row[2]
+        rss_d = feedparser.parse(url_list)
         if "entries" not in rss_d or len(rss_d.entries) == 0:
             print(f"{name} url returns empty entries")
             continue
         for i in range(min(15, len(rss_d.entries))):
             entry = rss_d.entries[i]
-            if url_list[1] != entry['link']:
-                conn = sqlite3.connect('config/rss.db')
-                q = [(name), (url_list[0]), (str(entry['link']))]
+            if last_url != entry['link']:
+                sqlite_connect()
+                q = [name, url_list, str(entry['link'])]
                 c = conn.cursor()
                 c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
                 conn.commit()
                 conn.close()
-                rss_load()
                 send_message_to_chat(name, context, entry)
 
 
 def cmd_test(update, context):
     url = "https://www.reddit.com/r/funny/new/.rss"
     rss_d = feedparser.parse(url)
-    rss_d.entries[0]['link']
     update.effective_message.reply_text(rss_d.entries[0]['link'])
 
 
 def init_sqlite():
-    conn = sqlite3.connect('config/rss.db')
+    sqlite_connect()
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS rss (name text, link text, last text)''')
     c.execute('''CREATE TABLE IF NOT EXISTS banned_word (value text)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages_send (link text)''')
+    conn.commit()
+    conn.close()
 
 import html
 import json
@@ -332,7 +306,6 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     context.bot.send_message(chat_id=chatid, text=message, parse_mode=ParseMode.HTML)
 
 
-
 def main():
     updater = Updater(token=Token, use_context=True)
     job_queue = updater.job_queue
@@ -354,7 +327,6 @@ def main():
         init_sqlite()
     except sqlite3.OperationalError:
         pass
-    rss_load()
 
     job_queue.run_repeating(rss_monitor, delay)
 
