@@ -285,9 +285,12 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
     # Build the message with some markup and additional information about what happened.
     # You might need to add some logic to deal with messages longer than the 4096 character limit.
+    update_mess = ""
+    if update:
+        update_mess = html.escape(json.dumps(update.to_dict(), indent=2, ensure_ascii=False))
     message = (
         f'An exception was raised while handling an update\n'
-        f'<pre>update = {html.escape(json.dumps(update.to_dict(), indent=2, ensure_ascii=False))}'
+        f'<pre>update = {update_mess}'
         '</pre>\n\n'
         f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
         f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
