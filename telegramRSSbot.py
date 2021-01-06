@@ -77,8 +77,8 @@ def cmd_rss_list(update, context):
     for name, url_list in feeds.items():
         update.effective_message.reply_text(
             "Title: " + name +
-            "\nrss url: " + url_list[0] +
-            "\nlast checked article: " + url_list[1])
+            "\nrss url: " + str(url_list[0]) +
+            "\nlast checked article: " + str(url_list[1]))
 
 
 def cmd_rss_add(update, context):
