@@ -41,7 +41,7 @@ def sqlite_load_all():
     rows = c.fetchall()
     feeds = {}
     for row in rows:
-        feeds[row[0]] = (row[1], rows[2])
+        feeds[row[0]] = (row[1], row[2])
     return feeds
 
 
