@@ -74,7 +74,7 @@ def cmd_rss_list(update, context):
     if len(feeds) == 0:
         update.effective_message.reply_text("Database empty")
         return
-    for name, url_list in feeds:
+    for name, url_list in feeds.items():
         update.effective_message.reply_text(
             "Title: " + name +
             "\nrss url: " + url_list[0] +
