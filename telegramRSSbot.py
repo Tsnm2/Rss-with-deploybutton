@@ -166,7 +166,7 @@ def cmd_help(update, context):
 
 def check_entry_contains_banned_word(entry_detail):
     c = conn.cursor()
-    c.execute("select * from banned_word where ? like ('%' || title || '%')", entry_detail)
+    c.execute("select * from banned_word where ? like ('%' || value || '%')", entry_detail)
     rows = c.fetchall()
     return len(rows) > 0
 
