@@ -39,7 +39,10 @@ def sqlite_load_all():
     c = conn.cursor()
     c.execute('SELECT * FROM rss')
     rows = c.fetchall()
-    return rows
+    feeds = {}
+    for row in rows:
+        feeds[row[0]] = (row[1], rows[2])
+    return feeds
 
 
 def sqlite_load_all_banned_words():
@@ -64,18 +67,15 @@ def sqlite_write_ban(word: str):
 
 
 def cmd_rss_list(update, context):
-    rows = sqlite_load_all()
-    if len(rows) == 0:
+    feeds = sqlite_load_all()
+    if len(feeds) == 0:
         update.effective_message.reply_text("Database empty")
         return
-    for row in rows:
-        title = row[0]
-        url_list = row[1]
-        last = row[2]
+    for name, url_list in feeds:
         update.effective_message.reply_text(
-            "Title: " + title +
-            "\nrss url: " + url_list +
-            "\nlast checked article: " + last)
+            "Title: " + name +
+            "\nrss url: " + url_list[0] +
+            "\nlast checked article: " + url_list[1])
 
 
 def cmd_rss_add(update, context):
@@ -166,7 +166,7 @@ def cmd_help(update, context):
 
 def check_entry_contains_banned_word(entry_detail):
     c = conn.cursor()
-    c.execute("select * from banned_word where ? like concat('%', title, '%')", entry_detail)
+    c.execute("select * from banned_word where ? like ('%' || title || '%')", entry_detail)
     rows = c.fetchall()
     return len(rows) > 0
 
@@ -240,19 +240,16 @@ def send_message_to_chat(name, context, rss_entry):
 
 
 def rss_monitor(context):
-    rows = sqlite_load_all()
-    for row in rows:
-        name = row[0]
-        url_list = row[1]
-        last_url = row[2]
-        rss_d = feedparser.parse(url_list)
+    feeds = sqlite_load_all()
+    for name, url_list in feeds.items():
+        rss_d = feedparser.parse(url_list[0])
         if "entries" not in rss_d or len(rss_d.entries) == 0:
             print(f"{name} url returns empty entries")
             continue
         for i in range(min(15, len(rss_d.entries))):
             entry = rss_d.entries[i]
-            if last_url != entry['link']:
-                q = [name, url_list, str(entry['link'])]
+            if url_list[1] != entry['link']:
+                q = [name, url_list[0], str(entry['link'])]
                 c = conn.cursor()
                 c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
                 conn.commit()
