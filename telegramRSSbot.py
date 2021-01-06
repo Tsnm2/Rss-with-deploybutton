@@ -49,7 +49,10 @@ def sqlite_load_all_banned_words():
     c = conn.cursor()
     c.execute('SELECT * FROM banned_word')
     rows = c.fetchall()
-    return rows
+    result = []
+    for row in rows:
+        result.append(row[0])
+    return result
 
 
 def sqlite_write(name, link, last):
@@ -116,7 +119,7 @@ def cmd_rss_list_ban(update, context):
         update.effective_message.reply_text("Database empty")
         return
     for title in rows:
-        update.effective_message.reply_text("Word: " + title[0])
+        update.effective_message.reply_text("Word: " + title)
 
 
 def cmd_rss_delete_ban(update, context):
@@ -164,11 +167,11 @@ def cmd_help(update, context):
         "\n\nThe current chatId is: " + str(update.message.chat.id))
 
 
-def check_entry_contains_banned_word(entry_detail):
-    c = conn.cursor()
-    c.execute("select * from banned_word where ? like ('%' || value || '%')", entry_detail)
-    rows = c.fetchall()
-    return len(rows) > 0
+def check_entry_contains_banned_word(banned_words, entry_detail):
+    for word in banned_words:
+        if word in entry_detail:
+            return True
+    return False
 
 
 def check_entry_budget(detail):
@@ -211,7 +214,7 @@ def save_message_send(link):
     conn.commit()
 
 
-def send_message_to_chat(name, context, rss_entry):
+def send_message_to_chat(banned_words, name, context, rss_entry):
     detail = rss_entry["summary_detail"]["value"]
 
     send_message = True
@@ -232,7 +235,7 @@ def send_message_to_chat(name, context, rss_entry):
     if is_message_already_send(rss_entry['link']):
         return
 
-    if check_entry_contains_banned_word(str(detail).lower()):
+    if check_entry_contains_banned_word(banned_words, str(detail).lower()):
         return
 
     save_message_send(rss_entry['link'])
@@ -241,6 +244,7 @@ def send_message_to_chat(name, context, rss_entry):
 
 def rss_monitor(context):
     feeds = sqlite_load_all()
+    banned_words = sqlite_load_all_banned_words()
     for name, url_list in feeds.items():
         rss_d = feedparser.parse(url_list[0])
         if "entries" not in rss_d or len(rss_d.entries) == 0:
@@ -253,7 +257,7 @@ def rss_monitor(context):
                 c = conn.cursor()
                 c.execute('''INSERT INTO rss('name','link','last') VALUES(?,?,?)''', q)
                 conn.commit()
-                send_message_to_chat(name, context, entry)
+                send_message_to_chat(banned_words, name, context, entry)
 
 
 def cmd_test(update, context):
