@@ -220,10 +220,10 @@ def send_message_to_chat(banned_words, name, context, rss_entry):
     send_message = True
 
     budget = ''
-    if "Budget" in detail:
-        send_message, budget = check_entry_budget(detail)
-    elif "Hourly Range" in detail:
+    if "Hourly Range" in detail:
         send_message, budget = get_hourly_price(detail)
+    elif "Budget" in detail:
+        send_message, budget = check_entry_budget(detail)
 
     prefix = ""
     if send_message and "Country" in detail and not check_blocked_country(detail):
