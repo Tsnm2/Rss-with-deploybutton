@@ -250,8 +250,7 @@ def rss_monitor(context):
         if "entries" not in rss_d or len(rss_d.entries) == 0:
             print(f"{name} url returns empty entries")
             continue
-        for i in range(min(15, len(rss_d.entries))):
-            entry = rss_d.entries[i]
+        for entry in rss_d.entries:
             if url_list[1] != entry['link']:
                 q = [name, url_list[0], str(entry['link'])]
                 c = conn.cursor()
