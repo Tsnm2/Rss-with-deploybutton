@@ -175,10 +175,13 @@ def check_entry_contains_banned_word(banned_words, entry_detail):
 
 
 def check_entry_budget(detail):
-    budget = re.search("Budget.*?: \\$([0-9,]+)", detail).group(1).replace(",", "")
-    if int(budget) > 99:
-        return True, budget
-    return False, ''
+    search_result = re.search("Budget.*?: \\$([0-9,]+)", detail)
+    if search_result:
+        budget = search_result.group(1).replace(",", "")
+        if int(budget) > 99:
+            return True, budget
+        return False, ''
+    return True, ''
 
 
 def get_hourly_price(detail):
@@ -222,7 +225,7 @@ def send_message_to_chat(banned_words, name, context, rss_entry):
     budget = ''
     if "Hourly Range" in detail:
         send_message, budget = get_hourly_price(detail)
-    elif "Budget" in detail:
+    elif "Budget</b>" in detail:
         send_message, budget = check_entry_budget(detail)
 
     prefix = ""
