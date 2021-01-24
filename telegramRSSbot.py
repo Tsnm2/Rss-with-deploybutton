@@ -178,7 +178,7 @@ def check_entry_budget(detail):
     search_result = re.search("Budget.*?: \\$([0-9,]+)", detail)
     if search_result:
         budget = search_result.group(1).replace(",", "")
-        if int(budget) > 99:
+        if int(budget) > 399:
             return True, budget
         return False, ''
     return True, ''
@@ -188,10 +188,10 @@ def get_hourly_price(detail):
     price = re.search("Hourly Range.*?: (.*)\n", detail).group(1)
     prices = price.replace('$', '').split('-')
     if len(prices) == 1:
-        return float(prices[0]) >= 25, price
+        return float(prices[0]) >= 35, price
     if len(prices) == 2:
         low, high = float(prices[0]), float(prices[1])
-        return (low >= 25 or high >= 25), price
+        return (low >= 35 or high >= 35), price
     return True, price
 
 
