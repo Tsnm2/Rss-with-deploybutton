@@ -12,6 +12,13 @@ For the docker image go to: https://hub.docker.com/r/bokker/rss.to.telegram/
 
 ### Installation
 
+
+<p align="left"><a href="https://heroku.com/deploy"> <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" /></a></p>
+
+
+
+
+
 Python 3.X
 
 ```sh
