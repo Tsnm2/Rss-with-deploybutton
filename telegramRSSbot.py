@@ -18,7 +18,7 @@ if os.environ.get('TOKEN'):
 else:
     Token = "X"
     chatid = "X"
-    delay = 60
+    delay = 180
 
 if Token == "X":
     print("Token not set!")
@@ -228,7 +228,7 @@ def send_message_to_chat(banned_words, name, context, rss_entry):
     elif "Budget</b>" in detail:
         send_message, budget = check_entry_budget(detail)
 
-    prefix = ""
+    prefix = "/mirror"
     if send_message and "Country" in detail and not check_blocked_country(detail):
         prefix = "⚠️⚠️⚠️⚠️"
 
