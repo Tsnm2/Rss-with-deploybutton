@@ -228,7 +228,7 @@ def send_message_to_chat(banned_words, name, context, rss_entry):
     elif "Budget</b>" in detail:
         send_message, budget = check_entry_budget(detail)
 
-    prefix = "/mirror"
+    prefix = "/mirror "
     if send_message and "Country" in detail and not check_blocked_country(detail):
         prefix = "⚠️⚠️⚠️⚠️"
 
