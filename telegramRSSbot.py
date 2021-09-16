@@ -188,10 +188,10 @@ def get_hourly_price(detail):
     price = re.search("Hourly Range.*?: (.*)\n", detail).group(1)
     prices = price.replace('$', '').split('-')
     if len(prices) == 1:
-        return float(prices[0]) >= 35, price
+        return float(prices[0]) >= 5, price
     if len(prices) == 2:
         low, high = float(prices[0]), float(prices[1])
-        return (low >= 35 or high >= 35), price
+        return (low >= 5 or high >= 5), price
     return True, price
 
 
